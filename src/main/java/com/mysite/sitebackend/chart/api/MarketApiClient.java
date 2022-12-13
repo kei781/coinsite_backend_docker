@@ -29,7 +29,7 @@ public class MarketApiClient {
     String formatedNow = now.minusDays(1).format(formatter);
 
     private String time() {
-        DayOfWeek dayOfWeek = this.now.getDayOfWeek();
+        DayOfWeek dayOfWeek = LocalDate.now().getDayOfWeek();
         int dayOfWeekNumber = dayOfWeek.getValue();
         // 토요일일땐, 목요일
         if (dayOfWeekNumber == 6) return this.now.minusDays(2).format(formatter);
