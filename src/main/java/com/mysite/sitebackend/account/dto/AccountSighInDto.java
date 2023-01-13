@@ -7,4 +7,5 @@ public class AccountSighInDto {
     private String userId;
     private boolean aboolean;
     private String userName;
+    private String role;
 }

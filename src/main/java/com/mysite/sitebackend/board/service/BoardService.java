@@ -31,13 +31,10 @@ import java.util.stream.Collectors;
 public class BoardService {
     private final BoardRepository boardRepository;
     private final AccountRepository accountRepository;
-    private final ImageFileRepository imageFileRepository;
     private final AwsS3Service awsS3Service;
     private final BoardCommentRepository commentRepository;
     private final ModelMapper modelMapper;
-    LocalDate now = LocalDate.now();
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-    String formatedNow = now.format(formatter);
+
 
     //전체검색
     public List<BoardSearchAllDto> searchAll(String value) {
@@ -65,43 +62,55 @@ public class BoardService {
 
     //게시글 작성하기
     public boolean boardPost(String lcategory, String mcategory, BoardInput boardInput) throws SQLException {
-        //공지카테고리안의 공지사항 게시판이나 이벤트 게시판일 경우
-        if (lcategory.equals("notice") && (mcategory.equals("n") || mcategory.equals("e"))) {
-            Account account = accountRepository.findByUserId(boardInput.getAuthor());
-            // 어드민만 게시글 작성가능
-            if (account.getRole().equals("ADMIN")) {
+        LocalDate now = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        String formatedNow = now.format(formatter);
+        if(boardInput.getContents().isEmpty() || boardInput.getSubject().isEmpty()){
+            return false;
+        }
+            //공지카테고리안의 공지사항 게시판이나 이벤트 게시판일 경우
+            if (lcategory.equals("notice") && (mcategory.equals("n") || mcategory.equals("e"))) {
+                Account account = accountRepository.findByUserId(boardInput.getAuthor());
+                // 어드민만 게시글 작성가능
+                if (account.getRole().equals("ADMIN")) {
+                    Board b1 = new Board();
+                    b1.setSubject(boardInput.getSubject());
+                    b1.setContents(boardInput.getContents());
+                    // 관리자는 글 작성시 반드시 어드민
+                    b1.setAuthor("관리자");
+                    b1.setViews(0);
+                    b1.setDate(formatedNow);
+                    b1.setLcategory(lcategory);
+                    b1.setMcategory(mcategory);
+                    Board board = this.boardRepository.save(b1);
+                    return true;
+                } else return false;
+            }
+            // 그외 카테고리, 게시판일경우
+            else {
+                // 자유롭게 게시글 작성가능
                 Board b1 = new Board();
                 b1.setSubject(boardInput.getSubject());
                 b1.setContents(boardInput.getContents());
-                // 관리자는 글 작성시 반드시 어드민
-                b1.setAuthor("관리자");
+                b1.setAuthor(boardInput.getAuthor());
                 b1.setViews(0);
                 b1.setDate(formatedNow);
                 b1.setLcategory(lcategory);
                 b1.setMcategory(mcategory);
                 Board board = this.boardRepository.save(b1);
                 return true;
-            } else return false;
-        }
-        // 그외 카테고리, 게시판일경우
-        else {
-            // 자유롭게 게시글 작성가능
-            Board b1 = new Board();
-            b1.setSubject(boardInput.getSubject());
-            b1.setContents(boardInput.getContents());
-            b1.setAuthor(boardInput.getAuthor());
-            b1.setViews(0);
-            b1.setDate(formatedNow);
-            b1.setLcategory(lcategory);
-            b1.setMcategory(mcategory);
-            Board board = this.boardRepository.save(b1);
-            return true;
-        }
+            }
     }
 
     //댓글 작성하기
     public boolean commentPost(BoardInput boardInput) {
+        LocalDate now = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        String formatedNow = now.format(formatter);
         Optional<Board> optionalBoard = this.boardRepository.findById(boardInput.getId());
+        if(boardInput.getContents().isEmpty()){
+            return false;
+        }
         // 댓글을 작성하려는 게시글이 옳바르게 존재하면
         if (optionalBoard.isPresent()) {
             // 해당게시글이 문의 게시판인지 체크
@@ -190,6 +199,12 @@ public class BoardService {
 
     //게시글 수정
     public boolean boardPatch(String lcategory, String mcategory, BoardInput boardInput) {
+        LocalDate now = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        String formatedNow = now.format(formatter);
+        if(boardInput.getContents().isEmpty() || boardInput.getSubject().isEmpty()){
+            return false;
+        }
         Optional<Board> opBoard = Optional.ofNullable(this.boardRepository.findByIdAndLcategoryAndMcategory(boardInput.getId(), lcategory, mcategory));
         if (opBoard.isPresent()) {
             if (boardInput.getAuthor().equals(opBoard.get().getAuthor())) {
@@ -206,7 +221,13 @@ public class BoardService {
 
     //댓글 수정
     public boolean commentPatch(BoardInput boardInput) {
+        LocalDate now = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        String formatedNow = now.format(formatter);
         Optional<BoardComment> opComment = commentRepository.findById(boardInput.getId());
+        if(boardInput.getContents().isEmpty()){
+            return false;
+        }
         if (opComment.isPresent()) {
             if (boardInput.getAuthor().equals(opComment.get().getAuthor())) {
                 BoardComment comment = opComment.get();

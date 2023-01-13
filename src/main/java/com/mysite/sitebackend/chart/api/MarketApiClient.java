@@ -24,28 +24,31 @@ import java.util.Optional;
 public class MarketApiClient {
     private final ChartRepository chartRepository;
     private final ApiKey apiKey;
-    LocalDate now = LocalDate.now();
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-    String formatedNow = now.minusDays(1).format(formatter);
+
 
     private String time() {
+        LocalDate now = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        String formatedNow = now.minusDays(1).format(formatter);
         DayOfWeek dayOfWeek = LocalDate.now().getDayOfWeek();
         int dayOfWeekNumber = dayOfWeek.getValue();
         // 토요일일땐, 목요일
-        if (dayOfWeekNumber == 6) return this.now.minusDays(2).format(formatter);
+        if (dayOfWeekNumber == 6) return now.minusDays(2).format(formatter);
         //일요일일땐, 목요일
-        else if (dayOfWeekNumber == 7) return this.now.minusDays(3).format(formatter);
+        else if (dayOfWeekNumber == 7) return now.minusDays(3).format(formatter);
         //월요일일땐, 금요일
-        else if (dayOfWeekNumber == 1) return this.now.minusDays(3).format(formatter);
-        else return this.now.minusDays(1).format(formatter);
+        else if (dayOfWeekNumber == 1) return now.minusDays(3).format(formatter);
+        else return now.minusDays(1).format(formatter);
     }
 
     public Chart ApiCall(String name) throws Exception {
-
+        LocalDate now = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        String formatedNow = now.minusDays(1).format(formatter);
         if (name.equals("코스피") || name.equals("코스닥")) { // 코스피 코스닥만 입력가능
             // DB에 기저장된 자료가 있는지 체크
             // DB에 기 저장된 자료가 없다면 매일 초회에 한하여 1회 api호출 후 DB에 저장
-            Optional<Chart> opMarketChart = Optional.ofNullable(this.chartRepository.findByDateAndNameAndChartIndex(this.formatedNow, name, "Market"));
+            Optional<Chart> opMarketChart = Optional.ofNullable(this.chartRepository.findByDateAndNameAndChartIndex(formatedNow, name, "Market"));
             if (opMarketChart.isEmpty()) {
                 //api에 데이터 요청하기
                 StringBuilder sb = new StringBuilder("http://apis.data.go.kr/1160100/service/GetMarketIndexInfoService/getStockMarketIndex?");
@@ -54,7 +57,7 @@ public class MarketApiClient {
                 // 일, 월일경우 금요일껄 호출하여, 오늘데이터로 입력
                 sb.append("&likeBasDt=").append(time());
                 sb.append("&idxNm=").append(idxNm);
-                System.out.println("이거맞니 : "+ this.now);
+                System.out.println("이거맞니 : "+ now);
                 URL url = new URL(sb.toString());
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
@@ -76,7 +79,7 @@ public class MarketApiClient {
                 Chart chartChart = new Chart();
                 if (opElement.isPresent()) { // 요청한 api에 데이터가 존재하면(전일이 평일일경우)
                     //api 데이터 저장하기
-                    chartChart.setDate(this.formatedNow);//날짜
+                    chartChart.setDate(formatedNow);//날짜
                     chartChart.setName(item.getChildText("idxNm")); // 이름
                     chartChart.setValue(item.getChildText("clpr")); // 전일종가
                     chartChart.setAvg(item.getChildText("fltRt")); // 전일대비 변동폭

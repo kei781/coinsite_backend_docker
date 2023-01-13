@@ -52,7 +52,6 @@ public class AccountService {
         // 만약 아이디가 포함된 칼럼이 '있다면'
         if (opAccount.isPresent()) {
             Account account = accountRepository.findByUserId(accountInput.getUserId());
-
             // 입력받은 패스워드와, 컬럼에 포함된 패스워드가 '같은지 체크'
             if (this.passwordEncoder.matches(accountInput.getPassword(), account.getPassword())) {
                 //로그인에 성공했을때만, 유저네임과 true 반환
@@ -60,21 +59,22 @@ public class AccountService {
                 accountSighInDto.setUserId(opAccount.get().getUserId());
                 accountSighInDto.setUserName(opAccount.get().getUserName());
                 accountSighInDto.setAboolean(true);
-                System.out.println(accountSighInDto);
+                accountSighInDto.setRole(opAccount.get().getRole());
             } else {
                 accountSighInDto.setUserId(null);
                 accountSighInDto.setUserName(null);
                 accountSighInDto.setAboolean(false);
+                accountSighInDto.setRole(null);
             }
-            return accountSighInDto;
         }
         // 만약 아이디가 포함된 칼럼이 '없다면'
         else {
             accountSighInDto.setUserId(null);
             accountSighInDto.setUserName(null);
             accountSighInDto.setAboolean(false);
-            return accountSighInDto;
+            accountSighInDto.setRole(null);
         }
+        return accountSighInDto;
     }
 
     //패스워드 리셋

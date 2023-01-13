@@ -24,24 +24,27 @@ import java.util.Optional;
 public class StockApiClient {
     private final ChartRepository chartRepository;
     private final ApiKey apiKey;
-    LocalDate now = LocalDate.now();
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-    String formatedNow = now.minusDays(1).format(formatter);
 
     private String time() {
+        LocalDate now = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        String formatedNow = now.minusDays(1).format(formatter);
         DayOfWeek dayOfWeek = LocalDate.now().getDayOfWeek();
         int dayOfWeekNumber = dayOfWeek.getValue();
         // 토요일일땐, 목요일
-        if (dayOfWeekNumber == 6) return this.now.minusDays(2).format(formatter);
+        if (dayOfWeekNumber == 6) return now.minusDays(2).format(formatter);
             //일요일일땐, 목요일
-        else if (dayOfWeekNumber == 7) return this.now.minusDays(3).format(formatter);
+        else if (dayOfWeekNumber == 7) return now.minusDays(3).format(formatter);
             //월요일일땐, 금요일
-        else if (dayOfWeekNumber == 1) return this.now.minusDays(3).format(formatter);
-        else return this.now.minusDays(1).format(formatter);
+        else if (dayOfWeekNumber == 1) return now.minusDays(3).format(formatter);
+        else return now.minusDays(1).format(formatter);
     }
 
     public Chart ApiCall(String name) throws Exception {
-        Optional<Chart> opStockChart = Optional.ofNullable(this.chartRepository.findByDateAndNameAndChartIndex(this.formatedNow, name, "Stock"));
+        LocalDate now = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        String formatedNow = now.minusDays(1).format(formatter);
+        Optional<Chart> opStockChart = Optional.ofNullable(this.chartRepository.findByDateAndNameAndChartIndex(formatedNow, name, "Stock"));
         // DB에 기저장된 자료가 있는지 체크
         // DB에 기 저장된 자료가 없다면 매일 초회에 한하여 1회 api호출 후 DB에 저장
         if (opStockChart.isEmpty()) {
@@ -74,7 +77,7 @@ public class StockApiClient {
             Chart chart = new Chart();
             if (opElement.isPresent()) {
                 //api 데이터 저장하기
-                chart.setDate(this.formatedNow);//날짜
+                chart.setDate(formatedNow);//날짜
                 chart.setName(item.getChildText("itmsNm")); // 이름
                 chart.setValue(item.getChildText("clpr")); // 전일종가
                 chart.setAvg(item.getChildText("fltRt")); // 전일대비 변동폭
@@ -88,6 +91,6 @@ public class StockApiClient {
         }
         // DB에 기 저장된 자료가 없다면 매일 초회에 한하여 1회 api호출 후 DB에 저장 후 return
         // DB에 기 저장된 자료가 있따면 api를 호출하지않고, DB에서 바로 return
-        return this.chartRepository.findByDateAndNameAndChartIndex(this.formatedNow, name, "Stock");
+        return this.chartRepository.findByDateAndNameAndChartIndex(formatedNow, name, "Stock");
     }
 }
